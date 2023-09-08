@@ -1,22 +1,16 @@
 {
-  "name": "trostruk-project-auto-setup-script",
+  "name": "trostruk-auto-setup",
   "version": "0.0.1",
   "description": "A simple project setup script",
   "main": "test.js",
-  "scripts": {
-    "start": "node test.js"
-  },
   "bin": {
     "trostruk-auto-setup": "./test.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/trostruk/starter"
+    "url": "git+https://github.com/trostruk/starter.git"
   },
   "keywords": ["project", "setup"],
   "author": "Tonći Jozipović",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/trostruk/starter/issues"
-  }
+  "license": "MIT"
 }

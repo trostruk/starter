@@ -93,7 +93,9 @@ module.exports = connectDB;
 
   writeFile(path.join(projectPath, "config", "database.js"), dbContent);
 
-
+    // Create main.css in the public/css folder
+const mainCSS = `body { background-color: gray; }`;
+writeFile(path.join(projectPath, "public", "css", "main.css"), mainCSS);
 
   const indexController = `
 exports.homePage = (req, res) => {
@@ -117,7 +119,16 @@ module.exports = router;
   writeFile(path.join(projectPath, "routes", "indexRoute.js"), indexRoute);
 
   // Create index.ejs in the views folder
-  const indexEjs = `<h1>Welcome to your new project!</h1>`;
+  const indexEjs = `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="/css/main.css">
+  </head>
+  <body>
+    <h1>Welcome to your new project!</h1>
+  </body>
+  </html>`;
   writeFile(path.join(projectPath, "views", "index.ejs"), indexEjs);
 
   const serverSetup = `

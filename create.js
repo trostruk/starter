@@ -122,4 +122,11 @@ module.exports = {
   MONGODB_URI=your_mongodb_connection_string_here
     `;
     writeFile(path.join(projectPath, '.env'), envContent);
+
+    const gitIgnoreContent = "node_modules/\n.env\n";
+const gitIgnorePath = path.join(projectPath, ".gitignore");
+
+console.log(`Writing .gitignore to ${gitIgnorePath}`);
+writeFile(gitIgnorePath, gitIgnoreContent);
+
 };

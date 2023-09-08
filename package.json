@@ -2,9 +2,9 @@
   "name": "trostruk-auto-setup",
   "version": "0.0.1",
   "description": "A simple project setup script",
-  "main": "test.js",
+  "main": "create.js",
   "bin": {
-    "trostruk-auto-setup": "./test.js"
+    "trostruk-auto-setup": "./create.js"
   },
   "repository": {
     "type": "git",

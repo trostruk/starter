@@ -1,6 +1,6 @@
 {
   "name": "trostruk-auto-setup",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A simple project setup script",
   "main": "create.js",
   "bin": {

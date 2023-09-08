@@ -10,24 +10,18 @@ const rl = readline.createInterface({
   output: process.stdout,
 });
 
-let port = 3000; // Default port
+let port = 3000;
 
 rl.question("Enter the project name: ", (projectName) => {
-  rl.question(
-    "Enter the directory where you want to create the project: ",
-    (projectDir) => {
-      rl.question("Do you want to include MongoDB? (yes/no): ", (includeDB) => {
-        rl.question(
-          "Enter the port number for the Express app: ",
-          (enteredPort) => {
-            port = enteredPort || port; // Use entered port or default
-            rl.close();
-            initializeProject(projectName, projectDir, includeDB, port);
-          }
-        );
+  rl.question("Enter the directory: ", (projectDir) => {
+    rl.question("Include MongoDB? (yes/no): ", (includeDB) => {
+      rl.question("Enter the port number: ", (enteredPort) => {
+        port = enteredPort || port;
+        rl.close();
+        initializeProject(projectName, projectDir, includeDB, port);
       });
-    }
-  );
+    });
+  });
 });
 
 const mkdir = (dirPath) => fs.mkdirSync(dirPath, { recursive: true });
@@ -69,68 +63,90 @@ const initializeProject = (projectName, projectDir, includeDB, port) => {
   execSync(`npm init -y`, { stdio: "inherit" });
   execSync(`npm install express ejs body-parser dotenv`, { stdio: "inherit" });
 
-  if (includeDB.toLowerCase() === "yes") {
-    execSync(`npm install mongoose`, { stdio: "inherit" });
-    const dbConfigContent = `
-module.exports = {
-  dbURI: process.env.MONGODB_URI
-};
-    `;
-    writeFile(path.join(projectPath, "config", "database.js"), dbConfigContent);
-  }
-
   createStructure(projectStructure, projectPath);
 
-  const serverJsContent = `
-  require('dotenv').config();
-  const express = require('express');
-  const bodyParser = require('body-parser');
-  const app = express();
-  const port = process.env.PORT || ${port}; // Port from user input
-  
-  app.use(express.static('public'));
-  app.use(bodyParser.json());
-  app.use(bodyParser.urlencoded({ extended: true }));
-  
-  app.set('views', './views');
-  app.set('view engine', 'ejs');
-  
-  app.get('/', (req, res) => {
-    res.render('index');
-  });
-  
-  app.listen(port, () => {
-    console.log(\`Server running at http://localhost:\${port}/\`);
-  });
-    `;
-  writeFile(path.join(projectPath, "server.js"), serverJsContent);
+  let dbContent = "";
+  if (includeDB.toLowerCase() === "yes") {
+    execSync(`npm install mongoose`, { stdio: "inherit" });
+    dbContent = `
+const mongoose = require("mongoose");
+require("dotenv").config();
 
-  // Create a partials file for linking main.css
-  const partialCSSLink = `<link rel="stylesheet" type="text/css" href="/css/main.css">`;
+mongoose.set("strictQuery", false);
+
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(process.env.MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log(\`MongoDB connected: \${conn.connection.host}\`);
+  } catch (err) {
+    console.error(err);
+    process.exit(1);
+  }
+};
+
+module.exports = connectDB;
+    `;
+  }
+
+  writeFile(path.join(projectPath, "config", "database.js"), dbContent);
+
+
+
+  const indexController = `
+exports.homePage = (req, res) => {
+  res.render('index');
+};
+  `;
   writeFile(
-    path.join(projectPath, "views", "partials", "css.ejs"),
-    partialCSSLink
+    path.join(projectPath, "controllers", "indexController.js"),
+    indexController
   );
 
-  // Update index.ejs to include the partial
-  const updatedIndexEjsContent = `
-  <%- include('partials/css') %>
-  <h1>Welcome to your new Express project!</h1>
-    `;
-  writeFile(
-    path.join(projectPath, "views", "index.ejs"),
-    updatedIndexEjsContent
-  );
+  const indexRoute = `
+const express = require('express');
+const router = express.Router();
+const indexController = require('../controllers/indexController');
 
-  // Update .env with the selected port
-  const envContent = `
-  PORT=${port}
-  MONGODB_URI=your_mongodb_connection_string_here
-    `;
-  writeFile(path.join(projectPath, ".env"), envContent);
+router.get('/', indexController.homePage);
 
-  const gitIgnoreContent = "node_modules/\n.env\n";
-  const gitIgnorePath = path.join(projectPath, ".gitignore");
+module.exports = router;
+  `;
+  writeFile(path.join(projectPath, "routes", "indexRoute.js"), indexRoute);
 
-  writeFile(gitIgnorePath, gitIgnoreContent);
+  // Create index.ejs in the views folder
+  const indexEjs = `<h1>Welcome to your new project!</h1>`;
+  writeFile(path.join(projectPath, "views", "index.ejs"), indexEjs);
+
+  const serverSetup = `
+require('dotenv').config();
+const express = require('express');
+const bodyParser = require('body-parser');
+const indexRoute = require('./routes/indexRoute');
+${
+  includeDB.toLowerCase() === "yes"
+    ? "const connectDB = require('./config/database');"
+    : ""
+}
+const app = express();
+const port = process.env.PORT || ${port};
+
+${includeDB.toLowerCase() === "yes" ? "connectDB();" : ""}
+
+app.use(express.static('public'));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+app.set('views', './views');
+app.set('view engine', 'ejs');
+
+app.use('/', indexRoute);
+
+app.listen(port, () => {
+  console.log(\`Server running at http://localhost:\${port}/\`);
+});
+  `;
+  writeFile(path.join(projectPath, "server.js"), serverSetup);
 };

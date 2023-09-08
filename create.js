@@ -103,30 +103,34 @@ module.exports = {
     console.log(\`Server running at http://localhost:\${port}/\`);
   });
     `;
-    writeFile(path.join(projectPath, 'server.js'), serverJsContent);
+  writeFile(path.join(projectPath, "server.js"), serverJsContent);
 
-    // Create a partials file for linking main.css
-    const partialCSSLink = `<link rel="stylesheet" type="text/css" href="/css/main.css">`;
-    writeFile(path.join(projectPath, 'views', 'partials', 'css.ejs'), partialCSSLink);
-  
-    // Update index.ejs to include the partial
-    const updatedIndexEjsContent = `
+  // Create a partials file for linking main.css
+  const partialCSSLink = `<link rel="stylesheet" type="text/css" href="/css/main.css">`;
+  writeFile(
+    path.join(projectPath, "views", "partials", "css.ejs"),
+    partialCSSLink
+  );
+
+  // Update index.ejs to include the partial
+  const updatedIndexEjsContent = `
   <%- include('partials/css') %>
   <h1>Welcome to your new Express project!</h1>
     `;
-    writeFile(path.join(projectPath, 'views', 'index.ejs'), updatedIndexEjsContent);
-  
-    // Update .env with the selected port
-    const envContent = `
+  writeFile(
+    path.join(projectPath, "views", "index.ejs"),
+    updatedIndexEjsContent
+  );
+
+  // Update .env with the selected port
+  const envContent = `
   PORT=${port}
   MONGODB_URI=your_mongodb_connection_string_here
     `;
-    writeFile(path.join(projectPath, '.env'), envContent);
+  writeFile(path.join(projectPath, ".env"), envContent);
 
-    const gitIgnoreContent = "node_modules/\n.env\n";
-const gitIgnorePath = path.join(projectPath, ".gitignore");
+  const gitIgnoreContent = "node_modules/\n.env\n";
+  const gitIgnorePath = path.join(projectPath, ".gitignore");
 
-console.log(`Writing .gitignore to ${gitIgnorePath}`);
-writeFile(gitIgnorePath, gitIgnoreContent);
-
+  writeFile(gitIgnorePath, gitIgnoreContent);
 };

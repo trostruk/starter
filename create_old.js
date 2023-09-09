@@ -1,42 +1,41 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
-const readline = require('readline');
-const { execSync } = require('child_process');
+const fs = require("fs");
+const path = require("path");
+const readline = require("readline");
+const { execSync } = require("child_process");
 
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
 });
 
-const mkdir = (dirPath) => fs.mkdirSync(dirPath, { recursive: true });
-const writeFile = (filePath, content) => fs.writeFileSync(filePath, content);
+let port = 3000;
+let includeAnimations = "no";
 
-async function getUserConfig() {
-  return new Promise((resolve) => {
-    let config = {};
-    let port = 3000;
-
-    rl.question('Enter the project name: ', (projectName) => {
-      config.projectName = projectName;
-      rl.question('Enter the directory: ', (projectDir) => {
-        config.projectDir = projectDir;
-        rl.question('Include MongoDB? (yes/no): ', (includeDB) => {
-          config.includeDB = includeDB;
-          rl.question('Enter the port number: ', (enteredPort) => {
-            config.port = enteredPort || port;
-            rl.question('Include Animations? (yes/no): ', (includeAnimations) => {
-              config.includeAnimations = includeAnimations;
-              rl.close();
-              resolve(config);
-            });
-          });
+rl.question("Enter the project name: ", (projectName) => {
+  rl.question("Enter the directory: ", (projectDir) => {
+    rl.question("Include MongoDB? (yes/no): ", (includeDB) => {
+      rl.question("Enter the port number: ", (enteredPort) => {
+        rl.question("Include Animations? (yes/no): ", (ans) => {
+          includeAnimations = ans;
+          port = enteredPort || port;
+          rl.close();
+          initializeProject(
+            projectName,
+            projectDir,
+            includeDB,
+            port,
+            includeAnimations
+          );
         });
       });
     });
   });
-}
+});
+
+const mkdir = (dirPath) => fs.mkdirSync(dirPath, { recursive: true });
+const writeFile = (filePath, content) => fs.writeFileSync(filePath, content);
 
 const projectStructure = {
   config: {},
@@ -64,61 +63,91 @@ const createStructure = (structure, currentPath) => {
   });
 };
 
-async function initializeProject(config) {
-  const { projectName, projectDir, includeDB, port, includeAnimations } = config;
-
+const initializeProject = (
+  projectName,
+  projectDir,
+  includeDB,
+  port,
+  includeAnimations
+) => {
   if (projectDir) process.chdir(projectDir);
   mkdir(projectName);
   process.chdir(projectName);
 
   const projectPath = process.cwd();
 
-  execSync('npm init -y', { stdio: 'inherit' });
-  execSync('npm install express ejs body-parser dotenv', { stdio: 'inherit' });
+  execSync(`npm init -y`, { stdio: "inherit" });
+  execSync(`npm install express ejs body-parser dotenv`, { stdio: "inherit" });
 
   createStructure(projectStructure, projectPath);
 
-  if (includeDB.toLowerCase() === 'yes') {
-    execSync('npm install mongoose', { stdio: 'inherit' });
-    const dbContent = `const mongoose = require("mongoose");
-    require("dotenv").config();
-    
-    mongoose.set("strictQuery", false);
-    
-    const connectDB = async () => {
-      try {
-        const conn = await mongoose.connect(process.env.MONGO_URI, {
-          useNewUrlParser: true,
-          useUnifiedTopology: true,
-        });
-        console.log(\`MongoDB connected: \${conn.connection.host}\`);
-      } catch (err) {
-        console.error(err);
-        process.exit(1);
-      }
-    };
-    
-    module.exports = connectDB;`;
-    writeFile(path.join(projectPath, 'config', 'database.js'), dbContent);
+  let dbContent = "";
+  if (includeDB.toLowerCase() === "yes") {
+    execSync(`npm install mongoose`, { stdio: "inherit" });
+    dbContent = `
+const mongoose = require("mongoose");
+require("dotenv").config();
+
+mongoose.set("strictQuery", false);
+
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(process.env.MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log(\`MongoDB connected: \${conn.connection.host}\`);
+  } catch (err) {
+    console.error(err);
+    process.exit(1);
   }
+};
+
+module.exports = connectDB;
+    `;
+  }
+
+  writeFile(path.join(projectPath, "config", "database.js"), dbContent);
 
   // Create main.css in the public/css folder
   const mainCSS = `body { background-color: gray; }`;
-  writeFile(path.join(projectPath, 'public', 'css', 'main.css'), mainCSS);
+  writeFile(path.join(projectPath, "public", "css", "main.css"), mainCSS);
 
-  // Create indexController in the controllers folder
-  const indexController = `exports.homePage = (req, res) => { res.render('index'); };`;
-  writeFile(path.join(projectPath, 'controllers', 'indexController.js'), indexController);
+  const indexController = `
+exports.homePage = (req, res) => {
+  res.render('index');
+};
+  `;
+  writeFile(
+    path.join(projectPath, "controllers", "indexController.js"),
+    indexController
+  );
 
-  // Create indexRoute in the routes folder
-  const indexRoute = `const express = require('express'); const router = express.Router(); const indexController = require('../controllers/indexController'); router.get('/', indexController.homePage); module.exports = router;`;
-  writeFile(path.join(projectPath, 'routes', 'indexRoute.js'), indexRoute);
+  const indexRoute = `
+const express = require('express');
+const router = express.Router();
+const indexController = require('../controllers/indexController');
+
+router.get('/', indexController.homePage);
+
+module.exports = router;
+  `;
+  writeFile(path.join(projectPath, "routes", "indexRoute.js"), indexRoute);
 
   // Create index.ejs in the views folder
-  const indexEjs = `<!DOCTYPE html><html><head><link rel="stylesheet" type="text/css" href="/css/main.css"></head><body><h1>Welcome to your new project!</h1></body></html>`;
-  writeFile(path.join(projectPath, 'views', 'index.ejs'), indexEjs);
+  const indexEjs = `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="/css/main.css">
+  </head>
+  <body>
+    <h1>Welcome to your new project!</h1>
+  </body>
+  </html>`;
+  writeFile(path.join(projectPath, "views", "index.ejs"), indexEjs);
 
-  if (includeAnimations.toLowerCase() === 'yes') {
+  if (includeAnimations.toLowerCase() === "yes") {
     const animationJS = `// Function to check if an element is in the viewport
     function isInViewport(element) {
       const rect = element.getBoundingClientRect();
@@ -261,40 +290,35 @@ async function initializeProject(config) {
     } 
     `;
     writeFile(path.join(projectPath, "public", "css", "animation.css"), animationCSS);
-  }
+  }    
 
-  // Create server.js
-  const serverSetup = `require('dotenv').config();
-  const express = require('express');
-  const bodyParser = require('body-parser');
-  const indexRoute = require('./routes/indexRoute');
-  ${
-    includeDB.toLowerCase() === "yes"
-      ? "const connectDB = require('./config/database');"
-      : ""
-  }
-  const app = express();
-  const port = process.env.PORT || ${port};
-  
-  ${includeDB.toLowerCase() === "yes" ? "connectDB();" : ""}
-  
-  app.use(express.static('public'));
-  app.use(bodyParser.json());
-  app.use(bodyParser.urlencoded({ extended: true }));
-  
-  app.set('views', './views');
-  app.set('view engine', 'ejs');
-  
-  app.use('/', indexRoute);
-  
-  app.listen(port, () => {
-    console.log(\`Server running at http://localhost:\${port}/\`);
-  });
-    `;
-  writeFile(path.join(projectPath, 'server.js'), serverSetup);
+  const serverSetup = `
+require('dotenv').config();
+const express = require('express');
+const bodyParser = require('body-parser');
+const indexRoute = require('./routes/indexRoute');
+${
+  includeDB.toLowerCase() === "yes"
+    ? "const connectDB = require('./config/database');"
+    : ""
 }
+const app = express();
+const port = process.env.PORT || ${port};
 
-(async () => {
-  const config = await getUserConfig();
-  await initializeProject(config);
-})();
+${includeDB.toLowerCase() === "yes" ? "connectDB();" : ""}
+
+app.use(express.static('public'));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+app.set('views', './views');
+app.set('view engine', 'ejs');
+
+app.use('/', indexRoute);
+
+app.listen(port, () => {
+  console.log(\`Server running at http://localhost:\${port}/\`);
+});
+  `;
+  writeFile(path.join(projectPath, "server.js"), serverSetup);
+};

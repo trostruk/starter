@@ -20,17 +20,14 @@ async function getUserConfig() {
 
     rl.question('Enter the project name: ', (projectName) => {
       config.projectName = projectName;
-      rl.question('Enter the directory: ', (projectDir) => {
-        config.projectDir = projectDir;
-        rl.question('Include MongoDB? (yes/no): ', (includeDB) => {
-          config.includeDB = includeDB;
-          rl.question('Enter the port number: ', (enteredPort) => {
-            config.port = enteredPort || port;
-            rl.question('Include Animations? (yes/no): ', (includeAnimations) => {
-              config.includeAnimations = includeAnimations;
-              rl.close();
-              resolve(config);
-            });
+      rl.question('Include MongoDB? (yes/no): ', (includeDB) => {
+        config.includeDB = includeDB;
+        rl.question('Enter the port number: ', (enteredPort) => {
+          config.port = enteredPort || port;
+          rl.question('Include Animations? (yes/no): ', (includeAnimations) => {
+            config.includeAnimations = includeAnimations;
+            rl.close();
+            resolve(config);
           });
         });
       });
@@ -65,11 +62,10 @@ const createStructure = (structure, currentPath) => {
 };
 
 async function initializeProject(config) {
-  const { projectName, projectDir, includeDB, port, includeAnimations } = config;
+  const { projectName, includeDB, port, includeAnimations } = config;
 
-  if (projectDir) process.chdir(projectDir);
-  mkdir(projectName);
-  process.chdir(projectName);
+  mkdir(projectName);  // Create project folder based on the project name
+  process.chdir(projectName);  // Move into the new project folde
 
   const projectPath = process.cwd();
 
